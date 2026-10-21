@@ -1,0 +1,88 @@
+{
+  "id": "defender_edr",
+  "name": "Microsoft Defender for Endpoint (EDR)",
+  "name_en": "Microsoft Defender for Endpoint (EDR)",
+  "version": "1.0.0",
+  "description": "Gestión de endpoints protegidos con Microsoft Defender for Endpoint: consultar alertas, listar dispositivos, aislar/liberar dispositivos y obtener vulnerabilidades",
+  "description_en": "Protected endpoint management with Microsoft Defender for Endpoint: query alerts, list devices, isolate/release devices and get vulnerabilities",
+  "icon": "icon.svg",
+  "category": "security",
+  "category_en": "security",
+  "keywords": [
+    "defender",
+    "microsoft defender",
+    "edr",
+    "endpoint",
+    "mde",
+    "alertas",
+    "aislar",
+    "isolate",
+    "vulnerabilidades",
+    "ciberseguridad"
+  ],
+  "library": {
+    "package": "ruvic-defender-edr-connector",
+    "install": "pip install git+https://github.com/RuvicDev/CON-085-Microsoft-Defender-EDR.git#subdirectory=lib",
+    "import_name": "ruvic_defender_edr_connector"
+  },
+  "auth_modes": [
+    {
+      "id": "client_credentials",
+      "label": "Aplicación de Microsoft Entra ID",
+      "fields": [
+        {
+          "key": "tenant_id",
+          "label": "Tenant ID (Directory ID)",
+          "type": "text",
+          "required": true,
+          "placeholder": "00000000-0000-0000-0000-000000000000",
+          "help_text": "Microsoft Entra ID → Información general → Id. de inquilino"
+        },
+        {
+          "key": "client_id",
+          "label": "Client ID (Application ID)",
+          "type": "text",
+          "required": true,
+          "placeholder": "00000000-0000-0000-0000-000000000000",
+          "help_text": "ID de la aplicación registrada en Microsoft Entra ID"
+        },
+        {
+          "key": "client_secret",
+          "label": "Client Secret",
+          "type": "password",
+          "secret": true,
+          "required": true,
+          "help_text": "Valor del secreto de cliente (no el 'Secret ID'); se muestra una sola vez al crearlo"
+        },
+        {
+          "key": "api_base_url",
+          "label": "URL base de la API",
+          "type": "text",
+          "required": false,
+          "default": "https://api.securitycenter.microsoft.com",
+          "help_text": "Déjalo por defecto, o usa un endpoint regional (ej. https://us.api.security.microsoft.com)"
+        },
+        {
+          "key": "connect_timeout",
+          "label": "Timeout de conexión (segundos)",
+          "type": "number",
+          "required": false,
+          "default": "30"
+        }
+      ]
+    }
+  ],
+  "env_prefix": "RUVIC_DEFENDER_EDR_",
+  "operations": [
+    "alerts.list",
+    "devices.list",
+    "device.isolate",
+    "device.release",
+    "vulnerabilities.list"
+  ],
+  "test_connection": true,
+  "docs": {
+    "skill": "SKILL.md",
+    "permissions_note": "En la aplicación de Microsoft Entra ID agrega permisos de aplicación de la API 'WindowsDefenderATP': Alert.Read.All, Machine.Read.All, Machine.Isolate y Vulnerability.Read.All, y otorga el consentimiento de administrador. Machine.Isolate permite aislar equipos reales de la red: omítelo si solo quieres lectura."
+  }
+}

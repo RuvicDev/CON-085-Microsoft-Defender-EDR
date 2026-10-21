@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="doc_title">Conector Microsoft Defender for Endpoint (EDR) — Guía de configuración | Ruvic</title>
+  <link rel="stylesheet" href="assets/ruvic.css">
+</head>
+<body class="guide">
+<div class="guide-shell">
+<main class="ruvic-container">
+  <nav class="ruvic-toc" aria-label="Índice">
+    <h2 data-i18n="toc_title">Contenido</h2>
+    <ol>
+      <li><a href="#que-es" data-i18n="toc.que_es">¿Qué es y para qué sirve?</a></li>
+      <li><a href="#prerrequisitos" data-i18n="toc.prerrequisitos">Prerrequisitos</a></li>
+      <li><a href="#configuracion-fabricante" data-i18n="toc.configuracion_fabricante">Configuración en el fabricante</a></li>
+      <li><a href="#permisos" data-i18n="toc.permisos">Permisos requeridos</a></li>
+      <li><a href="#configuracion-ruvic" data-i18n="toc.configuracion_ruvic">Configuración en Ruvic</a></li>
+      <li><a href="#verificacion" data-i18n="toc.verificacion">Verificación</a></li>
+      <li><a href="#solucion-problemas" data-i18n="toc.solucion_problemas">Solución de problemas</a></li>
+      <li><a href="#faq-seguridad" data-i18n="toc.faq_seguridad">Preguntas frecuentes y notas de seguridad</a></li>
+    </ol>
+  </nav>
+
+  <h1 data-i18n="guide_title">Conector Microsoft Defender for Endpoint (EDR) — Guía de configuración</h1>
+  <p class="guide-updated" data-i18n="guide_updated">Última actualización: octubre 2026</p>
+
+  <section id="que-es">
+    <h2 data-i18n="section.que_es">¿Qué es y para qué sirve?</h2>
+    <p data-i18n="que_es.body">El conector Microsoft Defender for Endpoint permite que el agente de Ruvic consulte alertas y dispositivos protegidos, aísle o libere equipos comprometidos y revise sus vulnerabilidades. Puedes pedirle cosas como:</p>
+    <ul>
+      <li data-i18n="que_es.example1">"¿Qué alertas de severidad alta siguen nuevas en Defender?"</li>
+      <li data-i18n="que_es.example2">"Aísla el equipo laptop-ventas-07, tiene ransomware (ticket INC-123)."</li>
+      <li data-i18n="que_es.example3">"¿Qué vulnerabilidades críticas tiene el servidor srv-app01?"</li>
+    </ul>
+    <p data-i18n="que_es.ops_intro">Operaciones soportadas:</p>
+    <table>
+      <thead><tr><th data-i18n="table.operacion">Operación</th><th data-i18n="table.que_hace">Qué hace</th></tr></thead>
+      <tbody>
+        <tr><td><code>alerts.list</code></td><td data-i18n="op.1">Consulta alertas por severidad y estado</td></tr>
+        <tr><td><code>devices.list</code></td><td data-i18n="op.2">Lista dispositivos con estado de salud y riesgo</td></tr>
+        <tr><td><code>device.isolate</code></td><td data-i18n="op.3">Aísla un equipo de la red (Selective o Full)</td></tr>
+        <tr><td><code>device.release</code></td><td data-i18n="op.4">Libera un equipo aislado</td></tr>
+        <tr><td><code>vulnerabilities.list</code></td><td data-i18n="op.5">Obtiene CVE de un equipo o de la organización</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-warning">
+      <span class="callout-title" data-i18n="callout.main.title">Aislar un equipo corta su red de inmediato</span>
+      <span data-i18n="callout.main.body">El aislamiento es una acción real sobre el equipo. El agente solo la ejecuta cuando se lo pides y siempre registra el motivo.</span>
+    </div>
+  </section>
+
+  <section id="prerrequisitos">
+    <h2 data-i18n="section.prerrequisitos">Prerrequisitos</h2>
+    <ul>
+      <li data-i18n="prereq.1">Licencia de Microsoft Defender for Endpoint (Plan 2 o Microsoft 365 E5) con equipos incorporados.</li>
+      <li data-i18n="prereq.2">Rol de Administrador de aplicaciones o Administrador global en Microsoft Entra ID para registrar la aplicación y dar consentimiento.</li>
+    </ul>
+  </section>
+
+  <section id="configuracion-fabricante">
+    <h2 data-i18n="section.configuracion_fabricante">Configuración en el fabricante</h2>
+    <p data-i18n="fabricante.intro">Vas a registrar una aplicación en Microsoft Entra ID con permisos de la API de Defender.</p>
+    <ol class="ruvic-steps">
+      <li>
+        <strong data-i18n="step.1.label">Registra la aplicación.</strong>
+        <p data-i18n="step.1.body">En <strong>Microsoft Entra ID → Registros de aplicaciones → Nuevo registro</strong>, crea "Ruvic Defender" para una sola organización. Copia el <strong>Id. de aplicación (cliente)</strong> y el <strong>Id. de directorio (inquilino)</strong>.</p>
+      </li>
+      <li>
+        <strong data-i18n="step.2.label">Agrega los permisos.</strong>
+        <p data-i18n="step.2.body">En <strong>Permisos de API → Agregar un permiso → API que usa mi organización → WindowsDefenderATP → Permisos de aplicación</strong>, marca <code>Alert.Read.All</code>, <code>Machine.Read.All</code>, <code>Machine.Isolate</code> y <code>Vulnerability.Read.All</code>.</p>
+        <div class="screenshot-placeholder" data-i18n="img.step2.placeholder">[ Captura: permisos de WindowsDefenderATP en la aplicación — reemplazar por assets/img/defender-permisos.png ]</div>
+      </li>
+      <li>
+        <strong data-i18n="step.3.label">Concede el consentimiento.</strong>
+        <p data-i18n="step.3.body">Pulsa <strong>Conceder consentimiento de administrador</strong> y verifica que todos los permisos queden en verde.</p>
+      </li>
+      <li>
+        <strong data-i18n="step.4.label">Crea el secreto.</strong>
+        <p data-i18n="step.4.body">En <strong>Certificados y secretos → Nuevo secreto de cliente</strong>, copia el <strong>Valor</strong> de inmediato.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="permisos">
+    <h2 data-i18n="section.permisos">Permisos requeridos</h2>
+    <p data-i18n="permisos.intro">Permisos de aplicación de la API WindowsDefenderATP. Omite <code>Machine.Isolate</code> si quieres un conector solo de lectura.</p>
+    <table>
+      <thead><tr><th data-i18n="table.permiso">Permiso</th><th data-i18n="table.para_que">Para qué lo usa el conector</th></tr></thead>
+      <tbody>
+        <tr><td><code>Alert.Read.All</code></td><td data-i18n="perm.1.desc">Consultar alertas</td></tr>
+        <tr><td><code>Machine.Read.All</code></td><td data-i18n="perm.2.desc">Listar dispositivos</td></tr>
+        <tr><td><code>Machine.Isolate</code></td><td data-i18n="perm.3.desc">Aislar y liberar equipos</td></tr>
+        <tr><td><code>Vulnerability.Read.All</code></td><td data-i18n="perm.4.desc">Consultar vulnerabilidades</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="configuracion-ruvic">
+    <h2 data-i18n="section.configuracion_ruvic">Configuración en Ruvic</h2>
+    <p data-i18n="ruvic.intro">Entra a <strong>Settings → Conectores</strong>, busca la tarjeta <strong>Microsoft Defender for Endpoint (EDR)</strong> y pulsa <strong>Configurar</strong>. Diligencia el formulario con los valores de la sección anterior:</p>
+    <table>
+      <thead><tr><th data-i18n="table.campo">Campo del formulario</th><th data-i18n="table.valor">Valor</th></tr></thead>
+      <tbody>
+        <tr><td data-i18n="field.tenant_id">Tenant ID (Directory ID)</td><td data-i18n="field.tenant_id.desc">Id. de directorio (inquilino) de Microsoft Entra ID</td></tr>
+        <tr><td data-i18n="field.client_id">Client ID (Application ID)</td><td data-i18n="field.client_id.desc">Id. de aplicación (cliente) de la aplicación registrada</td></tr>
+        <tr><td data-i18n="field.client_secret">Client Secret</td><td data-i18n="field.client_secret.desc">El Valor del secreto (no el Id. de secreto). Se guarda cifrado</td></tr>
+        <tr><td data-i18n="field.api_base_url">URL base de la API</td><td data-i18n="field.api_base_url.desc">Déjalo por defecto o usa un endpoint regional</td></tr>
+        <tr><td data-i18n="field.connect_timeout">Timeout de conexión (segundos)</td><td data-i18n="field.connect_timeout.desc">Opcional; <code>30</code> segundos por defecto</td></tr>
+      </tbody>
+    </table>
+    <p data-i18n="ruvic.save">Guarda y pulsa <strong>Probar conexión</strong>: la plataforma valida las credenciales y el acceso.</p>
+    <div class="screenshot-placeholder" data-i18n="img.formulario.placeholder">[ Captura: formulario del conector Microsoft Defender for Endpoint (EDR) en Settings → Conectores — reemplazar por assets/img/defender_edr-form.png ]</div>
+  </section>
+
+  <section id="verificacion">
+    <h2 data-i18n="section.verificacion">Verificación</h2>
+    <ol class="ruvic-steps">
+      <li>
+        <strong data-i18n="verif.1.label">Test de conexión exitoso.</strong>
+        <p data-i18n="verif.1.body">El botón <em>Probar conexión</em> debe responder con éxito y la tarjeta debe quedar en estado <strong>Configurado</strong>.</p>
+      </li>
+      <li>
+        <strong data-i18n="verif.2.label">Prueba mínima con el agente.</strong>
+        <p data-i18n="verif.2.body">Abre una conversación nueva y pídele:</p>
+        <blockquote data-i18n="verif.2.prompt">"¿Cuántas alertas nuevas hay en Defender y en qué equipos?"</blockquote>
+        <p data-i18n="verif.2.result">El agente debe responder con alertas reales. No le pidas aislar equipos durante la prueba.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="solucion-problemas">
+    <h2 data-i18n="section.solucion_problemas">Solución de problemas</h2>
+    <table>
+      <thead><tr><th data-i18n="table.sintoma">Mensaje / síntoma</th><th data-i18n="table.causa">Causa probable y solución</th></tr></thead>
+      <tbody>
+        <tr><td data-i18n="trouble.1.symptom">"No se pudo obtener el token … AADSTS7000215"</td><td data-i18n="trouble.1.fix">El secreto es incorrecto o venció. Crea uno nuevo y copia el Valor.</td></tr>
+        <tr><td data-i18n="trouble.2.symptom">"Permiso insuficiente" (403)</td><td data-i18n="trouble.2.fix">Falta un permiso de WindowsDefenderATP o el consentimiento de administrador.</td></tr>
+        <tr><td data-i18n="trouble.3.symptom">"device_id debe ser el ID de máquina…"</td><td data-i18n="trouble.3.fix">Se pasó el nombre del equipo. Obtén el ID con list_devices.</td></tr>
+        <tr><td data-i18n="trouble.4.symptom">"Límite de peticiones" (429)</td><td data-i18n="trouble.4.fix">Se superaron 100 llamadas por minuto. Espera un minuto.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="faq-seguridad">
+    <h2 data-i18n="section.faq_seguridad">Preguntas frecuentes y notas de seguridad</h2>
+    <h3 data-i18n="faq.1.q">¿Qué diferencia hay entre aislamiento Selective y Full?</h3>
+    <p data-i18n="faq.1.a">Selective mantiene Outlook, Teams y Skype para comunicarse con el usuario; Full corta todo excepto Defender.</p>
+
+    <h3 data-i18n="faq.2.q">¿Puedo dejar el conector solo de lectura?</h3>
+    <p data-i18n="faq.2.a">Sí: no concedas Machine.Isolate. El aislamiento fallará con un error de permisos.</p>
+
+    <h3 data-i18n="faq.3.q">¿Qué hago si el secreto se filtra?</h3>
+    <p data-i18n="faq.3.a">Elimínalo en Certificados y secretos, crea uno nuevo y actualízalo en el formulario.</p>
+
+  </section>
+
+</main>
+</div>
+
+<script>
+  const I18N = {
+  "es": {
+    "doc_title": "Conector Microsoft Defender for Endpoint (EDR) — Guía de configuración | Ruvic",
+    "toc_title": "Contenido",
+    "toc.que_es": "¿Qué es y para qué sirve?",
+    "toc.prerrequisitos": "Prerrequisitos",
+    "toc.configuracion_fabricante": "Configuración en el fabricante",
+    "toc.permisos": "Permisos requeridos",
+    "toc.configuracion_ruvic": "Configuración en Ruvic",
+    "toc.verificacion": "Verificación",
+    "toc.solucion_problemas": "Solución de problemas",
+    "toc.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+    "guide_title": "Conector Microsoft Defender for Endpoint (EDR) — Guía de configuración",
+    "guide_updated": "Última actualización: octubre 2026",
+    "section.que_es": "¿Qué es y para qué sirve?",
+    "que_es.body": "El conector Microsoft Defender for Endpoint permite que el agente de Ruvic consulte alertas y dispositivos protegidos, aísle o libere equipos comprometidos y revise sus vulnerabilidades. Puedes pedirle cosas como:",
+    "que_es.example1": "\"¿Qué alertas de severidad alta siguen nuevas en Defender?\"",
+    "que_es.example2": "\"Aísla el equipo laptop-ventas-07, tiene ransomware (ticket INC-123).\"",
+    "que_es.example3": "\"¿Qué vulnerabilidades críticas tiene el servidor srv-app01?\"",
+    "que_es.ops_intro": "Operaciones soportadas:",
+    "table.operacion": "Operación",
+    "table.que_hace": "Qué hace",
+    "op.1": "Consulta alertas por severidad y estado",
+    "op.2": "Lista dispositivos con estado de salud y riesgo",
+    "op.3": "Aísla un equipo de la red (Selective o Full)",
+    "op.4": "Libera un equipo aislado",
+    "op.5": "Obtiene CVE de un equipo o de la organización",
+    "callout.main.title": "Aislar un equipo corta su red de inmediato",
+    "callout.main.body": "El aislamiento es una acción real sobre el equipo. El agente solo la ejecuta cuando se lo pides y siempre registra el motivo.",
+    "section.prerrequisitos": "Prerrequisitos",
+    "prereq.1": "Licencia de Microsoft Defender for Endpoint (Plan 2 o Microsoft 365 E5) con equipos incorporados.",
+    "prereq.2": "Rol de Administrador de aplicaciones o Administrador global en Microsoft Entra ID para registrar la aplicación y dar consentimiento.",
+    "section.configuracion_fabricante": "Configuración en el fabricante",
+    "fabricante.intro": "Vas a registrar una aplicación en Microsoft Entra ID con permisos de la API de Defender.",
+    "step.1.label": "Registra la aplicación.",
+    "step.1.body": "En <strong>Microsoft Entra ID → Registros de aplicaciones → Nuevo registro</strong>, crea \"Ruvic Defender\" para una sola organización. Copia el <strong>Id. de aplicación (cliente)</strong> y el <strong>Id. de directorio (inquilino)</strong>.",
+    "step.2.label": "Agrega los permisos.",
+    "step.2.body": "En <strong>Permisos de API → Agregar un permiso → API que usa mi organización → WindowsDefenderATP → Permisos de aplicación</strong>, marca <code>Alert.Read.All</code>, <code>Machine.Read.All</code>, <code>Machine.Isolate</code> y <code>Vulnerability.Read.All</code>.",
+    "img.step2.placeholder": "[ Captura: permisos de WindowsDefenderATP en la aplicación — reemplazar por assets/img/defender-permisos.png ]",
+    "step.3.label": "Concede el consentimiento.",
+    "step.3.body": "Pulsa <strong>Conceder consentimiento de administrador</strong> y verifica que todos los permisos queden en verde.",
+    "step.4.label": "Crea el secreto.",
+    "step.4.body": "En <strong>Certificados y secretos → Nuevo secreto de cliente</strong>, copia el <strong>Valor</strong> de inmediato.",
+    "section.permisos": "Permisos requeridos",
+    "permisos.intro": "Permisos de aplicación de la API WindowsDefenderATP. Omite <code>Machine.Isolate</code> si quieres un conector solo de lectura.",
+    "table.permiso": "Permiso",
+    "table.para_que": "Para qué lo usa el conector",
+    "perm.1.desc": "Consultar alertas",
+    "perm.2.desc": "Listar dispositivos",
+    "perm.3.desc": "Aislar y liberar equipos",
+    "perm.4.desc": "Consultar vulnerabilidades",
+    "section.configuracion_ruvic": "Configuración en Ruvic",
+    "ruvic.intro": "Entra a <strong>Settings → Conectores</strong>, busca la tarjeta <strong>Microsoft Defender for Endpoint (EDR)</strong> y pulsa <strong>Configurar</strong>. Diligencia el formulario con los valores de la sección anterior:",
+    "table.campo": "Campo del formulario",
+    "table.valor": "Valor",
+    "field.tenant_id": "Tenant ID (Directory ID)",
+    "field.tenant_id.desc": "Id. de directorio (inquilino) de Microsoft Entra ID",
+    "field.client_id": "Client ID (Application ID)",
+    "field.client_id.desc": "Id. de aplicación (cliente) de la aplicación registrada",
+    "field.client_secret": "Client Secret",
+    "field.client_secret.desc": "El Valor del secreto (no el Id. de secreto). Se guarda cifrado",
+    "field.api_base_url": "URL base de la API",
+    "field.api_base_url.desc": "Déjalo por defecto o usa un endpoint regional",
+    "field.connect_timeout": "Timeout de conexión (segundos)",
+    "field.connect_timeout.desc": "Opcional; <code>30</code> segundos por defecto",
+    "ruvic.save": "Guarda y pulsa <strong>Probar conexión</strong>: la plataforma valida las credenciales y el acceso.",
+    "img.formulario.placeholder": "[ Captura: formulario del conector Microsoft Defender for Endpoint (EDR) en Settings → Conectores — reemplazar por assets/img/defender_edr-form.png ]",
+    "section.verificacion": "Verificación",
+    "verif.1.label": "Test de conexión exitoso.",
+    "verif.1.body": "El botón <em>Probar conexión</em> debe responder con éxito y la tarjeta debe quedar en estado <strong>Configurado</strong>.",
+    "verif.2.label": "Prueba mínima con el agente.",
+    "verif.2.body": "Abre una conversación nueva y pídele:",
+    "verif.2.prompt": "\"¿Cuántas alertas nuevas hay en Defender y en qué equipos?\"",
+    "verif.2.result": "El agente debe responder con alertas reales. No le pidas aislar equipos durante la prueba.",
+    "section.solucion_problemas": "Solución de problemas",
+    "table.sintoma": "Mensaje / síntoma",
+    "table.causa": "Causa probable y solución",
+    "trouble.1.symptom": "\"No se pudo obtener el token … AADSTS7000215\"",
+    "trouble.1.fix": "El secreto es incorrecto o venció. Crea uno nuevo y copia el Valor.",
+    "trouble.2.symptom": "\"Permiso insuficiente\" (403)",
+    "trouble.2.fix": "Falta un permiso de WindowsDefenderATP o el consentimiento de administrador.",
+    "trouble.3.symptom": "\"device_id debe ser el ID de máquina…\"",
+    "trouble.3.fix": "Se pasó el nombre del equipo. Obtén el ID con list_devices.",
+    "trouble.4.symptom": "\"Límite de peticiones\" (429)",
+    "trouble.4.fix": "Se superaron 100 llamadas por minuto. Espera un minuto.",
+    "section.faq_seguridad": "Preguntas frecuentes y notas de seguridad",
+    "faq.1.q": "¿Qué diferencia hay entre aislamiento Selective y Full?",
+    "faq.1.a": "Selective mantiene Outlook, Teams y Skype para comunicarse con el usuario; Full corta todo excepto Defender.",
+    "faq.2.q": "¿Puedo dejar el conector solo de lectura?",
+    "faq.2.a": "Sí: no concedas Machine.Isolate. El aislamiento fallará con un error de permisos.",
+    "faq.3.q": "¿Qué hago si el secreto se filtra?",
+    "faq.3.a": "Elimínalo en Certificados y secretos, crea uno nuevo y actualízalo en el formulario.",
+  },
+  "en": {
+    "doc_title": "Microsoft Defender for Endpoint (EDR) Connector — Setup Guide | Ruvic",
+    "toc_title": "Contents",
+    "toc.que_es": "What is it and what is it for?",
+    "toc.prerrequisitos": "Prerequisites",
+    "toc.configuracion_fabricante": "Vendor-side setup",
+    "toc.permisos": "Required permissions",
+    "toc.configuracion_ruvic": "Setup in Ruvic",
+    "toc.verificacion": "Verification",
+    "toc.solucion_problemas": "Troubleshooting",
+    "toc.faq_seguridad": "FAQ and security notes",
+    "guide_title": "Microsoft Defender for Endpoint (EDR) Connector — Setup Guide",
+    "guide_updated": "Last updated: October 2026",
+    "section.que_es": "What is it and what is it for?",
+    "que_es.body": "The Microsoft Defender for Endpoint connector lets the Ruvic agent query alerts and protected devices, isolate or release compromised machines and review their vulnerabilities. You can ask things like:",
+    "que_es.example1": "\"Which high-severity alerts are still new in Defender?\"",
+    "que_es.example2": "\"Isolate laptop-ventas-07, it has ransomware (ticket INC-123).\"",
+    "que_es.example3": "\"Which critical vulnerabilities does server srv-app01 have?\"",
+    "que_es.ops_intro": "Supported operations:",
+    "table.operacion": "Operation",
+    "table.que_hace": "What it does",
+    "op.1": "Queries alerts by severity and status",
+    "op.2": "Lists devices with health and risk",
+    "op.3": "Isolates a device from the network (Selective or Full)",
+    "op.4": "Releases an isolated device",
+    "op.5": "Gets CVEs for a device or the organization",
+    "callout.main.title": "Isolating a device cuts its network immediately",
+    "callout.main.body": "Isolation is a real action on the device. The agent only runs it when you ask and always records the reason.",
+    "section.prerrequisitos": "Prerequisites",
+    "prereq.1": "Microsoft Defender for Endpoint license (Plan 2 or Microsoft 365 E5) with onboarded devices.",
+    "prereq.2": "Application Administrator or Global Administrator role in Microsoft Entra ID to register the app and grant consent.",
+    "section.configuracion_fabricante": "Vendor-side setup",
+    "fabricante.intro": "You will register an application in Microsoft Entra ID with Defender API permissions.",
+    "step.1.label": "Register the application.",
+    "step.1.body": "In <strong>Microsoft Entra ID → App registrations → New registration</strong>, create \"Ruvic Defender\" for a single tenant. Copy the <strong>Application (client) ID</strong> and the <strong>Directory (tenant) ID</strong>.",
+    "step.2.label": "Add the permissions.",
+    "step.2.body": "In <strong>API permissions → Add a permission → APIs my organization uses → WindowsDefenderATP → Application permissions</strong>, select <code>Alert.Read.All</code>, <code>Machine.Read.All</code>, <code>Machine.Isolate</code> and <code>Vulnerability.Read.All</code>.",
+    "img.step2.placeholder": "[ Screenshot: WindowsDefenderATP permissions on the app — replace with assets/img/defender-permisos.png ]",
+    "step.3.label": "Grant consent.",
+    "step.3.body": "Click <strong>Grant admin consent</strong> and check that all permissions turn green.",
+    "step.4.label": "Create the secret.",
+    "step.4.body": "In <strong>Certificates &amp; secrets → New client secret</strong>, copy the <strong>Value</strong> right away.",
+    "section.permisos": "Required permissions",
+    "permisos.intro": "WindowsDefenderATP application permissions. Omit <code>Machine.Isolate</code> for a read-only connector.",
+    "table.permiso": "Permission",
+    "table.para_que": "What the connector uses it for",
+    "perm.1.desc": "Query alerts",
+    "perm.2.desc": "List devices",
+    "perm.3.desc": "Isolate and release devices",
+    "perm.4.desc": "Query vulnerabilities",
+    "section.configuracion_ruvic": "Setup in Ruvic",
+    "ruvic.intro": "Go to <strong>Settings → Connectors</strong>, find the <strong>Microsoft Defender for Endpoint (EDR)</strong> card and click <strong>Configure</strong>. Fill in the form with the values from the previous section:",
+    "table.campo": "Form field",
+    "table.valor": "Value",
+    "field.tenant_id": "Tenant ID (Directory ID)",
+    "field.tenant_id.desc": "Microsoft Entra ID Directory (tenant) ID",
+    "field.client_id": "Client ID (Application ID)",
+    "field.client_id.desc": "Application (client) ID of the registered app",
+    "field.client_secret": "Client Secret",
+    "field.client_secret.desc": "The secret Value (not the Secret ID). Stored encrypted",
+    "field.api_base_url": "API base URL",
+    "field.api_base_url.desc": "Leave the default or use a regional endpoint",
+    "field.connect_timeout": "Connection timeout (seconds)",
+    "field.connect_timeout.desc": "Optional; <code>30</code> seconds by default",
+    "ruvic.save": "Save and click <strong>Test connection</strong>: the platform validates the credentials and access.",
+    "img.formulario.placeholder": "[ Screenshot: Microsoft Defender for Endpoint (EDR) connector form in Settings → Connectors — replace with assets/img/defender_edr-form.png ]",
+    "section.verificacion": "Verification",
+    "verif.1.label": "Successful connection test.",
+    "verif.1.body": "The <em>Test connection</em> button must succeed and the card must show <strong>Configured</strong>.",
+    "verif.2.label": "Minimal test with the agent.",
+    "verif.2.body": "Open a new conversation and ask:",
+    "verif.2.prompt": "\"How many new alerts are in Defender and on which devices?\"",
+    "verif.2.result": "The agent should answer with real alerts. Don't ask it to isolate devices during the test.",
+    "section.solucion_problemas": "Troubleshooting",
+    "table.sintoma": "Message / symptom",
+    "table.causa": "Likely cause and fix",
+    "trouble.1.symptom": "\"Could not get the token … AADSTS7000215\"",
+    "trouble.1.fix": "The secret is wrong or expired. Create a new one and copy the Value.",
+    "trouble.2.symptom": "\"Insufficient permission\" (403)",
+    "trouble.2.fix": "A WindowsDefenderATP permission or admin consent is missing.",
+    "trouble.3.symptom": "\"device_id must be the machine ID…\"",
+    "trouble.3.fix": "The device name was passed. Get the ID with list_devices.",
+    "trouble.4.symptom": "\"Rate limit\" (429)",
+    "trouble.4.fix": "More than 100 calls per minute. Wait a minute.",
+    "section.faq_seguridad": "FAQ and security notes",
+    "faq.1.q": "What's the difference between Selective and Full isolation?",
+    "faq.1.a": "Selective keeps Outlook, Teams and Skype to reach the user; Full cuts everything except Defender.",
+    "faq.2.q": "Can I make the connector read-only?",
+    "faq.2.a": "Yes: don't grant Machine.Isolate. Isolation will fail with a permission error.",
+    "faq.3.q": "What if the secret leaks?",
+    "faq.3.a": "Delete it in Certificates &amp; secrets, create a new one and update the form.",
+  },
+  };
+  /* El portal aplica el idioma del usuario (localStorage ruvic-docs-lang)
+     y actualiza [data-i18n], [data-i18n-placeholder] y [data-i18n-alt]. */
+</script>
+</body>
+</html>
